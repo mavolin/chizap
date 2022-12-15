@@ -81,7 +81,7 @@ func Logger(l *zap.Logger) func(http.Handler) http.Handler {
 			next.ServeHTTP(ww, r)
 
 			lat := time.Since(start)
-			rl.Info("["+r.Method+"] "+r.URL.Path,
+			rl.Info(r.Method+" "+r.URL.Path,
 				zap.Int("status", ww.Status()),
 				zap.Int("bytes_written", ww.BytesWritten()),
 				zap.Duration("latency", lat),
@@ -136,14 +136,14 @@ func Recoverer(next http.Handler) http.Handler {
 
 			httpRequest, _ := httputil.DumpRequest(r, false)
 			if brokenPipe {
-				l.Error("["+r.Method+"] "+r.URL.Path,
+				l.Error(r.Method+" "+r.URL.Path,
 					zap.Any("error", rec),
 					zap.String("request", string(httpRequest)),
 				)
 				return
 			}
 
-			l.Error("["+r.Method+"] "+r.URL.Path+" Recovered from panic",
+			l.Error(r.Method+" "+r.URL.Path+" Recovered from panic",
 				zap.Any("error", rec),
 				zap.String("request", string(httpRequest)),
 				zap.String("stack", string(debug.Stack())),
