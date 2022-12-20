@@ -42,7 +42,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var ctxKey struct{}
+type ctxKey struct{}
 
 // Logger returns a middleware handler that logs all requests using the passed
 // [zap.Logger].
@@ -95,7 +95,7 @@ func Logger(l *zap.Logger) func(http.Handler) http.Handler {
 //
 // Must be called after the [Logger] middleware.
 func Get(r *http.Request) *zap.Logger {
-	return r.Context().Value(ctxKey).(*zap.Logger)
+	return r.Context().Value(ctxKey{}).(*zap.Logger)
 }
 
 // GetSugared is shorthand for:
@@ -106,7 +106,7 @@ func GetSugared(r *http.Request) *zap.SugaredLogger {
 }
 
 func set(r *http.Request, l *zap.Logger) {
-	*r = *r.WithContext(context.WithValue(r.Context(), ctxKey, l))
+	*r = *r.WithContext(context.WithValue(r.Context(), ctxKey{}, l))
 }
 
 // Recoverer recovers from panics and logs the stack trace using the logger
