@@ -1,6 +1,8 @@
 before:
   hooks:
     - go mod tidy
+build:
+  skip: true
 changelog:
   use: github
   sort: asc
