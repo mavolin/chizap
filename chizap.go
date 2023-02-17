@@ -60,10 +60,26 @@ type ctxKey struct{}
 //   - remote: the remote address of the client
 //   - user_agent: the user agent of the client
 //   - referer: the referer of the client
-func Logger(l *zap.Logger) func(http.Handler) http.Handler {
+//
+// If you don't want a certain path prefix to be logged, you may specify it as
+// one of the excludedPaths.
+// Even if a path prefix is echoed, the logger will still be saved in the
+// request context.
+func Logger(l *zap.Logger, excludedPaths ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
+			var excluded bool
+			for _, path := range excludedPaths {
+				if strings.HasPrefix(r.URL.Path, path) {
+					excluded = true
+					break
+				}
+			}
+
+			var start time.Time
+			if !excluded {
+				start = time.Now()
+			}
 
 			rl := l.With(
 				zap.String("request_id", middleware.GetReqID(r.Context())),
@@ -80,12 +96,14 @@ func Logger(l *zap.Logger) func(http.Handler) http.Handler {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			next.ServeHTTP(ww, r)
 
-			lat := time.Since(start)
-			rl.Info(r.Method+" "+r.URL.Path,
-				zap.Int("status", ww.Status()),
-				zap.Int("bytes_written", ww.BytesWritten()),
-				zap.Duration("latency", lat),
-			)
+			if !excluded {
+				lat := time.Since(start)
+				rl.Info(r.Method+" "+r.URL.Path,
+					zap.Int("status", ww.Status()),
+					zap.Int("bytes_written", ww.BytesWritten()),
+					zap.Duration("latency", lat),
+				)
+			}
 		})
 	}
 }
